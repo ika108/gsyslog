@@ -1,55 +1,47 @@
 package config
 
 import (
-    	"flag"
-        "encoding/json"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io/ioutil"
+	"os"
 )
 
 type config struct {
-	configFile string
-	global map 
-	codecs []codec
-	filters []filter
-	inputs []input
-	outputs []output
-	queues []queue
+	Array []string `json:"array"`
+	Hash  struct {
+		String1 string `json:"string1"`
+		String2 string `json:"string2"`
+	} `json:"hash"`
+	Maxthread  float64 `json:"maxthread"`
+	Stringtest string  `json:"stringtest"`
 }
 
-func parseConfig() *config, error {
-    make myConfig config
-    var configFilePtr = flag.StringVar("configfile", "gsyslogd.conf, "Path to the configuration file")
+func NewConfig() (*config, error) {
+	var myConfigPtr *config
+	var configFilePtr = flag.String("configfile", "gsyslogd.conf", "Path to the configuration file")
 	flag.Parse()
-	fileObj, fileErr := os.Open(*configFilePtr)
-	if fileErr != nil {
-	    return _,fmt.Errorf("Error opening file",*configFilePtr,fileErr)
-	}
-	
-	jsonDecoder := json.NewDecoder(fileObj)
-	
-	configuration := Configuration{}
-	err := decoder.Decode(&configuration)
+
+	fileReader, err := os.Open(*configFilePtr)
 	if err != nil {
-	  fmt.Println("error:", err)
+		return myConfigPtr, fmt.Errorf("Error opening file", *configFilePtr, err)
 	}
-	fmt.Println(configuration.Users) // output: [UserA, UserB]
-}
+	defer fileReader.Close()
 
-func (myConfig *config) addCodec(codec *newCodec) {
-	config.codecs = append(config.codecs,newcodec)
-}
+	fileContent, err := ioutil.ReadAll(fileReader)
+	
+	if err != nil {
+		return myConfigPtr, fmt.Errorf("Error reading config file", err)
+	}
 
-func (myConfig *config) addFilter(filter *newFilter) {
-	config.filters = append(config.filters,newFilter)
-}
+	err = json.Unmarshal(fileContent, &myConfigPtr)
 
-func (myConfig *config) addInput(input *newInput) {
-	config.inputs = append(config.inputs,newInput)
-}
+	fmt.Println(myConfigPtr.Maxthread,myConfigPtr.Stringtest,myConfigPtr.Hash.String1,myConfigPtr.Array)
 
-func (myConfig *config) addOutput(output *newOutput) {
-	config.outputs = append(config.outputs,newOutput)
-}
 
-func (myConfig *config) addQueue(queue *newQueue) {
-	config.queues = append(config.queues,newQueue)
+	if err != nil {
+		return myConfigPtr, fmt.Errorf("Error parsing config file", err)
+	}
+	return myConfigPtr, nil
 }
